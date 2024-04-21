@@ -26,3 +26,10 @@
 2024-04-19 16:47:14,630 - INFO :  Theme set to NeonBanana
 2024-04-19 16:47:15,917 - INFO :  Action: create_room
 2024-04-19 16:47:16,079 - INFO :  Creating CreateRoomWindow
+2024-04-20 20:58:41,001 - INFO :  Theme set to NeonBanana
+2024-04-20 20:58:41,866 - INFO :  Action: create_join_room
+2024-04-20 20:58:42,041 - INFO :  Creating CreateRoomWindow
+2024-04-20 20:58:45,623 - INFO :  Action: create_room
+2024-04-20 20:58:45,774 - INFO :  Creating CreateRoomWindow
+2024-04-20 20:58:57,142 - INFO :  Action: create_join_room
+2024-04-20 20:58:57,295 - INFO :  Creating CreateRoomWindow

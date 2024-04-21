@@ -13,6 +13,15 @@ import random
 import string
 import logging
 import ctypes
+import socket
+import threading
+import time
+from tkinter import messagebox
+import os
+import random
+import json
+import tkinter as tk
+from tkinter import messagebox
 
 # Set up logging
 logging.basicConfig(filename='app.log', level=logging.INFO, format='%(asctime)s - %(levelname)s :  %(message)s')
@@ -36,7 +45,7 @@ def join_room():
 def create_room():
     logging.info('Action: create_room')
     create_room_window = customtkinter.CTk()
-    create_room_window.geometry("300x440")
+    create_room_window.geometry("380x340")
     create_room_window.title("Create Room")
     CreateRoomWindow(create_room_window)
     create_room_window.mainloop()
@@ -44,9 +53,9 @@ def create_room():
 def create_join_room():
     logging.info('Action: create_join_room')
     join_room_window = customtkinter.CTk()
-    join_room_window.geometry("200x440")
+    join_room_window.geometry("380x340")
     join_room_window.title("Join Room")
-    #JoinRoomWindow(join_room_window)
+    JoinRoomWindow(join_room_window)
     join_room_window.mainloop()
 
 class CreateRoomWindow:
@@ -55,20 +64,29 @@ class CreateRoomWindow:
         name_placeholder_text = "Room name"
 
         self.parent = parent
-        self.room_name_entry = customtkinter.CTkEntry(master=self.parent, justify=customtkinter.LEFT, placeholder_text=name_placeholder_text)
+        self.room_name_entry = customtkinter.CTkEntry(master=self.parent,placeholder_text=name_placeholder_text)
         self.room_name_entry.grid(row=1, column=0, padx=20, pady=20)
-        port_placeholder_text = "Port"
-        self.room_port_entry = customtkinter.CTkEntry(master=self.parent, placeholder_text=port_placeholder_text, justify=customtkinter.LEFT)
+
+        self.namelenght = customtkinter.CTkLabel(master=self.parent, text="Minimum 2 symbols", fg_color="transparent",
+                                                 font=("Helvetica", 15, "bold"))
+        self.namelenght.grid(row=1, column=1, padx=20, pady=20, sticky="w")
+
+        self.room_port_entry = customtkinter.CTkEntry(master=self.parent, justify=customtkinter.LEFT)
         self.room_port_entry.grid(row=2, column=0, padx=20, pady=20)
         
+        self.portlenght = customtkinter.CTkLabel(master=self.parent, text="Port 1-65535", fg_color="transparent",
+                                             font=("Helvetica", 15, "bold"))
+        self.portlenght.grid(row=2, column=1, padx=20, pady=20, sticky="w")
+
         self.password_checkbox_var = customtkinter.BooleanVar(value=True)
         self.password_checkbox = customtkinter.CTkCheckBox(master=self.parent, text="Use Password",
                                                            variable=self.password_checkbox_var,
                                                            command=self.toggle_password_entry)
+        
         self.password_checkbox.grid(row=3, column=0, padx=20, pady=20)
-        password_placeholder_text = "Password"
-        self.password_entry = customtkinter.CTkEntry(master=self.parent, justify=customtkinter.LEFT, placeholder_text=password_placeholder_text, state="normal")
-        self.password_entry.grid(row=4, column=0, padx=20, pady=20)
+        #password_placeholder_text = "Password" placeholder_text=password_placeholder_text,
+        self.password_entry = customtkinter.CTkEntry(master=self.parent, justify=customtkinter.LEFT, state="normal")
+        self.password_entry.grid(row=3, column=1, padx=20, pady=20)
 
         self.create_button = customtkinter.CTkButton(master=self.parent, text="Create Room", command=self.create_room,
                                                       hover_color="#1b1e48", font=("Helvetica", 15, "bold"))
@@ -78,21 +96,24 @@ class CreateRoomWindow:
         self.room_name_entry.configure(validate="key", validatecommand=(self.parent.register(self.validate_room_name), "%P"))
         self.room_port_entry.configure(validate="key", validatecommand=(self.parent.register(self.validate_room_port), "%P"))
         self.password_entry.configure(validate="key", validatecommand=(self.parent.register(self.validate_password), "%P"))
-        
+        self.password_entry.insert(0, self.generate_password())
+
     def toggle_password_entry(self):
         if self.password_checkbox_var.get():
             self.password_entry.configure(state="normal")
             self.password_entry.delete(0, customtkinter.END)
+            self.password_entry.grid()
             self.password_entry.insert(0, self.generate_password())
         else:
+            self.password_entry.pack()
             self.password_entry.delete(0, customtkinter.END)
             self.password_entry.configure(state="readonly")
 
     def generate_password(self):
-        password_length = 12
+        password_length = 3
         password_characters = string.ascii_letters + string.digits
         return ''.join(random.choice(password_characters) for _ in range(password_length))
-
+    #generate_password(self)
     def validate_room_name(self, name):
         if len(name) < 2:
             self.create_button.configure(state="disabled")
@@ -104,17 +125,19 @@ class CreateRoomWindow:
         else:
             self.create_button.configure(state="normal")
             return True
-
+    
     def validate_room_port(self, port):
+        if len(port) <= 5:  # Если длина порта меньше или равна 5 символам
+            return True     # Пропускаем проверку, так как порт уже установлен и состоит из 5 символов
         if not port.isdigit():
             return False
         port = int(port)
-        if port < 5 or port > 65535:
-            messagebox.showerror("Invalid Port", "Port must be between 5 and 65535")
+        if port < 1 or port > 65535:
+            messagebox.showerror("Invalid Port", "Port must be between 1 and 65535")
             return False
         else:
             return True
-
+    
     def validate_password(self, password):
         if len(password) > 12:
             password = password[:12]
@@ -140,6 +163,111 @@ class CreateRoomWindow:
         if password:
             print("Room Password:", password)
 
+class JoinRoomWindow:
+    def __init__(self, parent):
+        logging.info('Creating CreateRoomWindow')
+
+        self.parent = parent
+        self.room_name_entry = customtkinter.CTkEntry(master=self.parent)
+        self.room_name_entry.grid(row=1, column=0, padx=20, pady=20)
+
+        self.namelenght = customtkinter.CTkLabel(master=self.parent, text="Minimum 2 symbols", fg_color="transparent",
+                                                 font=("Helvetica", 15, "bold"))
+        self.namelenght.grid(row=1, column=1, padx=20, pady=20, sticky="w")
+
+        self.room_port_entry = customtkinter.CTkEntry(master=self.parent, justify=customtkinter.LEFT)
+        self.room_port_entry.grid(row=2, column=0, padx=20, pady=20)
+        
+        self.portlenght = customtkinter.CTkLabel(master=self.parent, text="Port 1-65535", fg_color="transparent",
+                                             font=("Helvetica", 15, "bold"))
+        self.portlenght.grid(row=2, column=1, padx=20, pady=20, sticky="w")
+
+        self.password_checkbox_var = customtkinter.BooleanVar(value=True)
+        self.password_checkbox = customtkinter.CTkCheckBox(master=self.parent, text="Use Password",
+                                                           variable=self.password_checkbox_var,
+                                                           command=self.toggle_password_entry)
+        
+        self.password_checkbox.grid(row=3, column=0, padx=20, pady=20)
+        #password_placeholder_text = "Password" placeholder_text=password_placeholder_text,
+        self.password_entry = customtkinter.CTkEntry(master=self.parent, justify=customtkinter.LEFT, state="normal")
+        self.password_entry.grid(row=4, column=0, padx=20, pady=20)
+
+        self.joinbutton = customtkinter.CTkButton(master=self.parent, text="Join Room", command=self.create_room,
+                                                      hover_color="#1b1e48", font=("Helvetica", 15, "bold"))
+        self.joinbutton.grid(row=5, column=0, padx=20, pady=20)
+        self.joinbutton.configure(state="disabled")
+
+        self.room_name_entry.configure(validate="key", validatecommand=(self.parent.register(self.validate_room_name), "%P"))
+        self.room_port_entry.configure(validate="key", validatecommand=(self.parent.register(self.validate_room_port), "%P"))
+        self.password_entry.configure(validate="key", validatecommand=(self.parent.register(self.validate_password), "%P"))
+        self.password_entry.insert(0, self.generate_password())
+
+
+    def toggle_password_entry(self):
+        if self.password_checkbox_var.get():
+            self.password_entry.configure(state="normal")
+            self.password_entry.delete(0, customtkinter.END)
+            self.password_entry.grid()
+            self.password_entry.insert(0, self.generate_password())
+        else:
+            self.password_entry.pack()
+            self.password_entry.delete(0, customtkinter.END)
+            self.password_entry.configure(state="readonly")
+
+
+    def generate_password(self):
+        password_length = 3
+        password_characters = string.ascii_letters + string.digits
+        return ''.join(random.choice(password_characters) for _ in range(password_length))
+    #generate_password(self)
+    def validate_room_name(self, name):
+        if len(name) < 2:
+            self.create_button.configure(state="disabled")
+            return True
+        elif len(name) > 12:
+            truncated_name = name[:12]
+            self.room_name_entry.delete(12, "end")
+            return False
+        else:
+            self.create_button.configure(state="normal")
+            return True
+    
+    def validate_room_port(self, port):
+        if len(port) <= 5:  # Если длина порта меньше или равна 5 символам
+            return True     # Пропускаем проверку, так как порт уже установлен и состоит из 5 символов
+        if not port.isdigit():
+            return False
+        port = int(port)
+        if port < 1 or port > 65535:
+            messagebox.showerror("Invalid Port", "Port must be between 1 and 65535")
+            return False
+        else:
+            return True
+    
+    def validate_password(self, password):
+        if len(password) > 12:
+            password = password[:12]
+            self.password_entry.delete(0, customtkinter.END)
+            self.password_entry.insert(0, password)
+            return True
+        else:
+            return True
+    
+    def create_room(self):
+        room_name = self.room_name_entry.get()
+        room_port = self.room_port_entry.get()
+        password = None
+        
+        if self.password_checkbox_var.get():
+            password = self.password_entry.get()
+            if not self.validate_password(password):
+                messagebox.showerror("Invalid Password", "Please enter a valid password.")
+                return
+        
+        print("Room Name:", room_name)
+        print("Room Port:", room_port)
+        if password:
+            print("Room Password:", password)
 def error_sound():
     threading.Thread(target=play_sound, args=(1000, 500)).start()
 
@@ -236,7 +364,37 @@ def update_time_and_date():
     app.after(1000, update_time_and_date) 
 
 update_time_and_date()
+# Флаг, чтобы отслеживать, было ли уже показано сообщение о доступности интернета
+internet_connection_shown = False
 
+def check_internet_periodically():
+    global internet_connection_shown
+    
+    while True:
+        if check_internet_connection():
+            internet_status = "Yes"  # Internet connection is available
+        else:
+            internet_status = "No"   # No internet connection
+        
+        # Update window title with internet status
+        app.title(f"PythonChat (Connection: {internet_status})")
+        
+        time.sleep(1)  # Wait 1 second before the next check
+
+
+
+def check_internet_connection():
+    try:
+        # Пытаемся установить соединение с DNS-серверами Google с более коротким временем ожидания
+        socket.create_connection(("8.8.8.8", 53), timeout=1)  # Устанавливаем таймаут в 1 секунду
+        return True
+    except OSError:
+        return False
+
+# Запускаем проверку доступа к интернету в отдельном потоке
+internet_thread = threading.Thread(target=check_internet_periodically)
+internet_thread.daemon = True  # Устанавливаем демонический флаг, чтобы поток завершался при закрытии приложения
+internet_thread.start()
 icon = ImageTk.PhotoImage(icon_pil)
 app.iconphoto(True, icon)
 app.wm_iconbitmap()
