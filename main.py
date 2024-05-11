@@ -8,8 +8,7 @@ import threading
 import tkinter.messagebox as messagebox
 from tkinter import PhotoImage
 from PIL import ImageTk, Image
-import json
-import random
+import yaml  # Import PyYAML
 import string
 import logging
 import ctypes
@@ -17,11 +16,7 @@ import socket
 import threading
 import time
 from tkinter import messagebox
-import os
-import random
-import json
 import tkinter as tk
-from tkinter import messagebox
 
 # Set up logging
 logging.basicConfig(filename='app.log', level=logging.INFO, format='%(asctime)s - %(levelname)s :  %(message)s')
@@ -37,18 +32,39 @@ ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID('python.exe')
 ctypes.windll.user32.SendMessageW(hwnd, 0x80, 0, icon_path)
 ctypes.windll.kernel32.SetConsoleIcon(ctypes.windll.shell32.ExtractIconW(0, icon_path, 0))
 
+from tqdm import tqdm
+for i in tqdm(range(int(9e6)),desc="Downloading update..."):
+                              pass
+
+
+class ChatRoom:
+    def __init__(self, parent):
+        self.parent = parent
+        self.room_name_entry = customtkinter.CTkEntry(master=self.parent)
+        self.room_name_entry.grid(row=1, column=0, padx=20, pady=20)
+        
+        app = customtkinter.CTk()
+        app.geometry("400x260")
+        app.title("PythonChat")
+        
+        label_1 = customtkinter.CTkLabel(master=app, justify=customtkinter.LEFT,textvariable=username)
+        label_1.pack(pady=1)
+        label_1.grid(row=0, column=0, padx=20, pady=20)
+
+
 def join_room():
     logging.info('Action: join_room')
     print("button pressed")
     threading.Thread(target=play_sound, args=(1000, 500)).start()
 
 def create_room():
-    logging.info('Action: create_room')
-    create_room_window = customtkinter.CTk()
-    create_room_window.geometry("380x340")
-    create_room_window.title("Create Room")
-    CreateRoomWindow(create_room_window)
-    create_room_window.mainloop()
+  logging.info('Action: create_room')
+  create_room_window = customtkinter.CTk()
+  create_room_window.geometry("380x340")
+  create_room_window.title("Create Room")
+  CreateRoomWindow(create_room_window)
+  create_room_window.mainloop()
+
 
 def create_join_room():
     logging.info('Action: create_join_room')
@@ -64,6 +80,7 @@ class CreateRoomWindow:
         name_placeholder_text = "Room name"
 
         self.parent = parent
+        
         self.room_name_entry = customtkinter.CTkEntry(master=self.parent,placeholder_text=name_placeholder_text)
         self.room_name_entry.grid(row=1, column=0, padx=20, pady=20)
 
@@ -146,7 +163,7 @@ class CreateRoomWindow:
             return True
         else:
             return True
-    
+
     def create_room(self):
         room_name = self.room_name_entry.get()
         room_port = self.room_port_entry.get()
@@ -160,6 +177,11 @@ class CreateRoomWindow:
         
         print("Room Name:", room_name)
         print("Room Port:", room_port)
+        create_room_window = customtkinter.CTk()
+        create_room_window.geometry("580x540")
+        create_room_window.title("Sigma")
+        ChatRoom(create_room_window)
+        create_room_window.mainloop()
         if password:
             print("Room Password:", password)
 
@@ -222,14 +244,14 @@ class JoinRoomWindow:
     #generate_password(self)
     def validate_room_name(self, name):
         if len(name) < 2:
-            self.create_button.configure(state="disabled")
+            self.joinbutton.configure(state="disabled")
             return True
         elif len(name) > 12:
             truncated_name = name[:12]
             self.room_name_entry.delete(12, "end")
             return False
         else:
-            self.create_button.configure(state="normal")
+            self.joinbutton.configure(state="normal")
             return True
     
     def validate_room_port(self, port):
@@ -275,20 +297,21 @@ def play_sound(frequency, duration):
     winsound.Beep(frequency, duration)
 
 NightTrain = os.path.join(script_dir, "NightTrain.json")
-current_theme = "NightTrain"
 NeonBanana = os.path.join(script_dir, "NeonBanana.json")
 customtkinter.set_ctk_parent_class(tkinterDnD.Tk)
-customtkinter.deactivate_automatic_dpi_awareness()
+#customtkinter.deactivate_automatic_dpi_awareness()
 customtkinter.set_appearance_mode("dark")
-customtkinter.set_default_color_theme(NightTrain)
+
 
 username1 = "user" + str(random.randint(0, 9999))
 
-save_file = "data.json"
+save_file = "data.yaml"  # Change save file extension to .yaml
 
 def update_username(event=None):
     global username
+
     new_username = label_1.get()
+
     if len(new_username) < 1:
         messagebox.showinfo("Error", "Username must contain at least 1 character")
         label_1.configure(fg_color="#c94040")
@@ -299,18 +322,74 @@ def update_username(event=None):
         update_username()
     else:
         label_1.configure(fg_color="black")
-        username = new_username
+
+        # Load existing data from YAML file
+        with open(save_file, "r") as file:
+            data = yaml.safe_load(file)
+
+        # Update the username in the loaded data
+        data["username"] = new_username
+
+        # Save the updated data back to YAML file
         with open(save_file, "w") as file:
-            json.dump({"username": new_username}, file)
+            yaml.dump(data, file)
+
+        username = new_username
+
 
 if not os.path.exists(save_file):
     username = "user" + str(random.randint(0, 9999))
     with open(save_file, "w") as file:
-        json.dump({"username": username}, file)
+        yaml.dump({"username": username}, file)  # Use yaml.dump to write YAML data
 else:
     with open(save_file, "r") as file:
-        data = json.load(file)
+        data = yaml.safe_load(file)  # Use yaml.safe_load to load YAML data
         username = data.get("username", "")
+
+# Load current theme from YAML file if available
+current_theme = None
+if os.path.exists(save_file):
+    with open(save_file, "r") as file:
+        data = yaml.safe_load(file)
+        current_theme = data.get("theme")
+
+if current_theme is None:
+    current_theme = "NightTrain"  # Set default theme if not loaded from YAML
+    logging.info('Theme set to NightTrain')
+    customtkinter.set_default_color_theme(NightTrain)
+elif current_theme == "NightTrain":
+    customtkinter.set_default_color_theme(NightTrain)
+elif current_theme == "NeonBanana":
+    customtkinter.set_default_color_theme(NeonBanana)
+else:
+    logging.warning("Unknown theme in data.yaml:", current_theme)
+def change_theme():
+    global current_theme
+
+    if current_theme == "NightTrain":
+        current_theme = "NeonBanana"
+        logging.info('Theme set to NeonBanana')
+        customtkinter.set_default_color_theme(NeonBanana)
+    elif current_theme == "NeonBanana":
+        current_theme = "NightTrain"
+        logging.info('Theme set to NightTrain')
+        customtkinter.set_default_color_theme(NightTrain)
+    else:
+        print("Unknown theme:", current_theme)
+
+    # Load existing data from YAML file
+    with open(save_file, "r") as file:
+        data = yaml.safe_load(file)
+
+    # Update the theme in the loaded data
+    data["theme"] = current_theme
+
+    # Save the updated data back to YAML file
+    with open(save_file, "w") as file:
+        yaml.dump(data, file)
+
+    os.execv(sys.executable, [sys.executable] + sys.argv)
+    app.destroy()
 
 app = customtkinter.CTk()
 app.geometry("400x260")
@@ -327,19 +406,12 @@ label_1.bind("<KeyRelease>", update_username)
 joinRoomButton = customtkinter.CTkButton(app, text="Join room", command=create_join_room, hover_color="#1b1e48", font=("Helvetica", 15, "bold"))
 joinRoomButton.grid(row=1, column=0, padx=20, pady=(0, 20), sticky="w")
 
-def change_theme():
-    global current_theme
-    if current_theme == "NightTrain":
-        current_theme = "NeonBanana"
-        logging.info('Theme set to NeonBanana')
-        customtkinter.set_default_color_theme(NeonBanana)
-    elif current_theme == "NeonBanana":
-        current_theme = "NightTrain"
-        logging.info('Theme set to NightTrain')
-        customtkinter.set_default_color_theme(NightTrain)
-    else:
-        print("Unknown theme:", current_theme)
-        
+import yaml,sys  # Добавим импорт модуля yaml
+
+import yaml
+import os
+import customtkinter
+
 changeTButton = customtkinter.CTkButton(app, text="Change theme", command=change_theme, hover_color="#1b1e48", font=("Helvetica", 15, "bold"))
 changeTButton.grid(row=4, column=0, padx=20, pady=(0, 20), sticky="w")
 
@@ -361,7 +433,7 @@ def update_time_and_date():
     current_date = now.strftime("%Y-%m-%d")
     time_label.configure(text="Time: " + current_time)
     date_label.configure(text="Date: " + current_date)
-    app.after(1000, update_time_and_date) 
+    app.after(1000, update_time_and_date)  
 
 update_time_and_date()
 # Флаг, чтобы отслеживать, было ли уже показано сообщение о доступности интернета
@@ -395,9 +467,11 @@ def check_internet_connection():
 internet_thread = threading.Thread(target=check_internet_periodically)
 internet_thread.daemon = True  # Устанавливаем демонический флаг, чтобы поток завершался при закрытии приложения
 internet_thread.start()
+
 icon = ImageTk.PhotoImage(icon_pil)
 app.iconphoto(True, icon)
 app.wm_iconbitmap()
 app.minsize(400, 260)
 app.maxsize(400, 260)
 app.mainloop()
+
