@@ -1,4 +1,70 @@
 import os
+import requests
+from tkinter import messagebox
+
+def replace_file(new_file, old_file):
+    try:
+        os.replace(new_file, old_file)
+        messagebox.showinfo("Обновление", "Файл успешно обновлен.")
+    except Exception as e:
+        messagebox.showerror("Ошибка", f"Ошибка при обновлении файла: {str(e)}")
+
+def check_for_updates(current_version):
+    # Указываем имя пользователя и название репозитория
+    repo_owner = 'purplesmileguy'
+    repo_name = 'purplechat'
+
+    # URL API GitHub для получения информации о релизах
+    api_url = f"https://api.github.com/repos/{repo_owner}/{repo_name}/releases/latest"
+
+    try:
+        # Получаем информацию о последнем релизе
+        response = requests.get(api_url)
+        latest_release = response.json()
+
+        # Проверяем наличие ключа 'tag_name' в ответе
+        if 'tag_name' in latest_release:
+            # Получаем версию последнего релиза
+            latest_version = latest_release['tag_name']
+
+            # Сравниваем версии
+            if latest_version != current_version:
+                # Если есть новая версия, показываем сообщение о обновлении
+                if messagebox.askyesno("Обновление доступно", f"Доступна новая версия {latest_version}.\nХотите загрузить обновление?"):
+                    # Ваш код для загрузки и установки обновления
+                    assets = latest_release['assets']
+                    for asset in assets:
+                        asset_url = asset['browser_download_url']
+                        filename = asset['name']
+                        # Определяем тип файла (.exe или .py)
+                        if filename.endswith('.exe'):
+                            new_exe = os.path.join(os.getcwd(), filename)
+                            # Загрузка нового .exe
+                            with open(new_exe, 'wb') as f:
+                                f.write(requests.get(asset_url).content)
+                            # Замена старого .exe на новый
+                            replace_file(new_exe, os.path.join(os.getcwd(), 'old_program.exe'))
+                        elif filename.endswith('.py'):
+                            new_py = os.path.join(os.getcwd(), filename)
+                            # Загрузка нового .py
+                            with open(new_py, 'wb') as f:
+                                f.write(requests.get(asset_url).content)
+                            # Замена старого .py на новый
+                            replace_file(new_py, os.path.join(os.getcwd(), 'old_program.py'))
+            else:
+                messagebox.showinfo("Обновление", "У вас установлена последняя версия.")
+        else:
+            messagebox.showerror("Ошибка", "Не удалось получить информацию о последнем релизе.")
+    except Exception as e:
+        messagebox.showerror("Ошибка", f"Ошибка при проверке обновлений: {str(e)}")
+
+# Замените 'current_version' на текущую версию вашей программы
+current_version = '1.0.0'
+check_for_updates(current_version)
+
+
+
+import os
 import random
 import customtkinter
 import tkinterDnD
