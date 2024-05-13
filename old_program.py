@@ -4,64 +4,68 @@ import subprocess
 import requests
 from tkinter import messagebox
 import traceback
-import os
-import sys
-import subprocess
-import requests
-import socket
-
-import os
-import sys
-import subprocess
-import requests
-import socket
-
-def check_internet_connection():
-    try:
-        # Пытаемся установить соединение с DNS-серверами Google с более коротким временем ожидания
-        socket.create_connection(("8.8.8.8", 53), timeout=1)  # Устанавливаем таймаут в 1 секунду
-        return True
-    except OSError:
-        return False
 
 GITHUB_REPO = "purplesmileguy/purplechat"
 GITHUB_API_URL = f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest"
-EXPECTED_TAG_FORMAT = "v{}.{}.{}"
 
 def get_current_version():
-    # Ваша функция, возвращающая текущую версию программы
-    return '1.0.1'
+    # Здесь вы можете реализовать код для получения текущей версии вашей программы
+    # Например, версия может быть храниться в каком-то файле или переменной
+    # Возвращаем текущую версию (замените это на ваш реальный способ получения версии)
+    return '1.1.0'
+
+def compare_versions(current_version, latest_version):
+    current_version_parts = [int(part) for part in current_version.split('.')]
+    latest_version_parts = [int(part) for part in latest_version.split('.')]
+    # Сравниваем каждый компонент версии
+    for curr, latest in zip(current_version_parts, latest_version_parts):
+        if curr < latest:
+            return True
+        elif curr > latest:
+            return False
+    return False
 
 def update_program():
-    if not check_internet_connection():
-        print("Нет подключения к интернету. Невозможно проверить обновления.")
-        return
-
     try:
-        response = requests.get(GITHUB_API_URL)
-        release_info = response.json()
-        latest_version_tag = release_info['tag_name']
         current_version = get_current_version()
-        latest_version = latest_version_tag[1:]  # Исключаем первый символ 'v' из тега
-        if latest_version > current_version:
-            print("Доступно обновление.")
-            choice = messagebox.askyesno("Обновление", "Доступно обновление. Хотите обновить программу?")
-            if choice:
-                print("Начинаем обновление...")
-                assets = release_info['assets']
-                asset = assets[0]  # Предполагаем, что первый ассет это файл программы
-                download_url = asset['browser_download_url']
-                new_file_path = os.path.join(os.getcwd(), "updated_program.py")
-                with open(new_file_path, 'wb') as f:
-                    response = requests.get(download_url)
-                    f.write(response.content)
-                print("Обновление завершено. Запускаем обновленную программу...")
-                restart_program(new_file_path)
-        else:
-            pass
-    except Exception as e:
-        print(f"Произошла ошибка при обновлении программы: {e}")
+        response = requests.get(GITHUB_API_URL)
+        response.raise_for_status()
+        latest_release = response.json()
 
+        if compare_versions(current_version, latest_release['tag_name']):
+            # Получаем ссылку на файлы обновления
+            assets = latest_release['assets']
+            # Перебираем все файлы обновления
+            for asset in assets:
+                asset_url = asset['browser_download_url']
+                filename = asset['name']
+                # Проверяем, является ли файл программы файлом main.py
+                if filename == 'main.py':
+                    # Получаем расширение текущего файла программы
+                    current_file_extension = os.path.splitext(sys.argv[0])[1].lower()
+                    # Получаем расширение нового файла программы
+                    new_file_extension = os.path.splitext(filename)[1].lower()
+                    # Определяем путь к новому файлу
+                    new_file_path = os.path.join(os.getcwd(), filename)
+                    # Загружаем новый файл
+                    response = requests.get(asset_url)
+                    with open(new_file_path, 'wb') as f:
+                        f.write(response.content)
+                    # Если расширения файлов совпадают, заменяем текущий файл программы
+                    if current_file_extension == new_file_extension:
+                        current_file_path = os.path.abspath(sys.argv[0])
+                        os.replace(new_file_path, current_file_path)
+                        messagebox.showinfo("Обновление", "Программа успешно обновлена. Пожалуйста, перезапустите программу.")
+                        restart_program(current_file_path)
+                        return
+                    else:
+                        messagebox.showinfo("Обновление", "Программа успешно обновлена. Новая версия программы другого формата была загружена.")
+                        restart_program(new_file_path)
+                        return
+        else:
+            messagebox.showinfo("Обновление", "У вас уже последняя версия программы.")
+    except Exception as e:
+        messagebox.showerror("Ошибка обновления", f"Произошла ошибка при обновлении программы:\n\n{traceback.format_exc()}")
 
 def restart_program(new_file_path):
     try:
@@ -70,16 +74,14 @@ def restart_program(new_file_path):
             subprocess.Popen([sys.executable, new_file_path])
         else:
             # Для Linux и macOS
-            os.execv(sys.executable, [sys.executable] + sys.argv)
+            os.execl(sys.executable, sys.executable, new_file_path)
     except Exception as e:
-        print(f"Произошла ошибка при перезапуске программы: {e}")
+        messagebox.showerror("Ошибка перезапуска", f"Произошла ошибка при перезапуске программы:\n\n{traceback.format_exc()}")
     finally:
         sys.exit()
 
+# Вызов функции для проверки обновлений
 update_program()
-
-
-
 import os
 
 import random
@@ -535,6 +537,16 @@ def check_internet_periodically():
         app.title(f"PythonChat (Connection: {internet_status})")
         
         time.sleep(1)  # Wait 1 second before the next check
+
+
+
+def check_internet_connection():
+    try:
+        # Пытаемся установить соединение с DNS-серверами Google с более коротким временем ожидания
+        socket.create_connection(("8.8.8.8", 53), timeout=1)  # Устанавливаем таймаут в 1 секунду
+        return True
+    except OSError:
+        return False
 
 # Запускаем проверку доступа к интернету в отдельном потоке
 internet_thread = threading.Thread(target=check_internet_periodically)
