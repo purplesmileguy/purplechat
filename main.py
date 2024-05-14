@@ -501,7 +501,7 @@ changeTButton.grid(row=4, column=0, padx=20, pady=(0, 20), sticky="w")
 createRoomButton = customtkinter.CTkButton(app, text="Create room", command=create_room, hover_color="#1b1e48", font=("Helvetica", 15, "bold"))
 createRoomButton.grid(row=2, column=0, padx=20, pady=(0, 20), sticky="w")
 
-info_frame = customtkinter.CTkFrame(master=app,fg_color="transparent")
+info_frame = customtkinter.CTkFrame(master=app,fg_color="transparent",border_width=0)
 info_frame.grid(row=0 , column=1, padx=20, pady=(20, 20), sticky="e")
 
 time_label = customtkinter.CTkLabel(master=info_frame, text="", font=("Helvetica", 14))
