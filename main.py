@@ -417,7 +417,7 @@ class CreateRoomWindow:
         # Запуск сервера
         server = ChatServer(port=int(room_port))
         threading.Thread(target=server.run, daemon=True).start()
-
+        create_room_window.destroy()
         # Запуск ngrok туннеля
         self.start_ngrok(room_port)
 
@@ -427,7 +427,7 @@ class CreateRoomWindow:
         chat_room_window.title("Chat Room - " + room_name)
         ChatRoom(chat_room_window)
         chat_room_window.mainloop()
-
+        
     def start_ngrok(self, room_port):
         def run_ngrok():
             try:
