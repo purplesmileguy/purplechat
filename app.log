@@ -133,3 +133,8 @@
 2024-07-21 14:25:23,649 - INFO :  Creating CreateRoomWindow
 2024-07-21 14:25:54,599 - INFO :  Action: create_room
 2024-07-21 14:25:54,742 - INFO :  Creating CreateRoomWindow
+2025-01-09 20:16:47,851 - INFO :  Updating authtoken for default "config_path" of "ngrok_path": C:\Users\User\AppData\Local\ngrok\ngrok.exe
+2025-01-09 20:18:01,627 - INFO :  Updating authtoken for default "config_path" of "ngrok_path": C:\Users\User\AppData\Local\ngrok\ngrok.exe
+2025-01-09 20:23:38,398 - INFO :  Updating authtoken for default "config_path" of "ngrok_path": C:\Users\User\AppData\Local\ngrok\ngrok.exe
+2025-01-09 20:23:55,510 - INFO :  Updating authtoken for default "config_path" of "ngrok_path": C:\Users\User\AppData\Local\ngrok\ngrok.exe
+2025-01-09 20:24:43,182 - INFO :  Updating authtoken for default "config_path" of "ngrok_path": C:\Users\User\AppData\Local\ngrok\ngrok.exe
