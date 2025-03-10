@@ -140,7 +140,7 @@ class ChatRoomClient(QMainWindow):
         self.setCentralWidget(widget)
         layout = QVBoxLayout()
 
-        self.chat_list = QListWidget()  # Новый элемент для сообщений
+        self.chat_list = QListWidget()
         layout.addWidget(self.chat_list)
 
         self.message_entry = QLineEdit()
@@ -176,7 +176,7 @@ class ChatRoomClient(QMainWindow):
             print(f"Lighting up the screen with: {message}")
             item = QListWidgetItem(message)
             self.chat_list.addItem(item)
-            self.chat_list.scrollToBottom()  # Автоскролл вниз
+            self.chat_list.scrollToBottom()
             print(f"Added to chat_list: {message}")
 
     def update_client_list(self, client_list_str):
@@ -199,6 +199,8 @@ class ChatRoomClient(QMainWindow):
         message = self.message_entry.text()
         if message:
             try:
+                # Показываем своё сообщение сразу в интерфейсе
+                self.display_message(f"{self.nickname}: {message}")
                 self.socket.send(message.encode('utf-8'))
                 print(f"Sent a banger: {message}")
                 self.message_entry.clear()
