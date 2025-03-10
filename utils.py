@@ -4,13 +4,13 @@ import yaml
 import random
 import sys
 import subprocess
-import customtkinter
-from tkinter import messagebox
 import os
 import winsound
 import threading
 import time
-from config import save_file, NightTrain, NeonBanana, GITHUB_API_URL
+from config import save_file, GITHUB_API_URL
+from PyQt6.QtWidgets import QMessageBox
+from qt_material import apply_stylesheet
 
 def check_internet_connection():
     try:
@@ -19,7 +19,7 @@ def check_internet_connection():
     except OSError:
         return False
 
-def update_program():
+def update_program(parent_widget=None):
     if not check_internet_connection():
         print("Нет интернета для проверки обновлений.")
         return
@@ -31,7 +31,7 @@ def update_program():
         latest_version = latest_version_tag[1:]
         if latest_version > current_version:
             print("Доступно обновление.")
-            if messagebox.askyesno("Обновление", "Доступно обновление. Хотите обновить программу?"):
+            if parent_widget and QMessageBox.question(parent_widget, "Обновление", "Доступно обновление. Хотите обновить программу?") == QMessageBox.StandardButton.Yes:
                 print("Начинаем обновление...")
                 assets = release_info['assets']
                 asset = assets[0]
@@ -60,34 +60,37 @@ def restart_program(new_file_path):
         sys.exit()
 
 def initialize_config():
+    default_config = {"username": "user" + str(random.randint(0, 9999)), "theme": "dark_teal.xml"}
     if not os.path.exists(save_file):
-        username = "user" + str(random.randint(0, 9999))
-        config = {"username": username, "theme": "NightTrain"}
         with open(save_file, "w") as file:
-            yaml.dump(config, file)
+            yaml.dump(default_config, file)
+        return default_config
     else:
-        with open(save_file, "r") as file:
-            config = yaml.safe_load(file)
-    return config
+        try:
+            with open(save_file, "r") as file:
+                config = yaml.safe_load(file)
+            if config is None:  # Если файл пустой
+                config = default_config
+                with open(save_file, "w") as file:
+                    yaml.dump(config, file)
+            return config
+        except yaml.YAMLError as e:
+            print(f"Ошибка чтения конфигурации: {e}")
+            return default_config
 
-def load_theme():
+def load_theme(app):
     config = initialize_config()
-    current_theme = config.get("theme", "NightTrain")
-    if current_theme == "NightTrain":
-        customtkinter.set_default_color_theme(NightTrain)
-    elif current_theme == "NeonBanana":
-        customtkinter.set_default_color_theme(NeonBanana)
-    else:
-        customtkinter.set_default_color_theme(NightTrain)
+    current_theme = config.get("theme", "dark_teal.xml")
+    apply_stylesheet(app, theme=current_theme)
 
-def change_theme():
+def change_theme(app):
     config = initialize_config()
-    current_theme = config.get("theme", "NightTrain")
-    new_theme = "NeonBanana" if current_theme == "NightTrain" else "NightTrain"
+    current_theme = config.get("theme", "dark_teal.xml")
+    new_theme = "light_pink.xml" if current_theme == "dark_teal.xml" else "dark_teal.xml"
     config["theme"] = new_theme
     with open(save_file, "w") as file:
         yaml.dump(config, file)
-    os.execv(sys.executable, [sys.executable] + sys.argv)
+    apply_stylesheet(app, theme=new_theme)
 
 def error_sound():
     threading.Thread(target=play_sound, args=(1000, 500)).start()
